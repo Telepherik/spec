@@ -48,7 +48,7 @@ transport ws
 
 ## Types
 
-A Telepherik document MUST define types in a top-level node named `types`. Each child node of this node represents an individual type. The name of each node represents the name of the type. The first argument, known as the supertype, is one of the following:
+A Telepherik document MUST define types in a top-level node named `types`. Each child node of this node represents an individual type. The name of each node represents the name of the type. Type names SHALL NOT include any of the following reserved characters: `<>,?!@&:.|`. The first argument, known as the supertype, is one of the following:
 
 - `int`, meaning this type represents an integer number.
 - `real`, meaning this type represents a real number.
@@ -64,6 +64,8 @@ The supertype defines which additional properties are required and how implement
 If multiple types with the same name are defined, implementations MUST report an error to the user.
 
 If the implementation's language has a type system capable of it, it SHOULD define new data types for the types defined, even when they are "backed" by the same data type.
+
+Implementations SHOULD support all supertypes and all combinations of properties for each supertype. If they are unable to, they MUST report an error to the user if an unsupported type is defined.
 
 ### Default properties
 
@@ -137,13 +139,16 @@ types {
 
 ### `enum`
 
-`enum` types represent one of a set of discrete values. In transfer, these values MUST be represented as an unsigned integer with a size in bytes equal to `2^(max(3, ceil(log2(log2(n)))))` where `n` is the number of possible values (in other words, the least power of two greater than 8 with enough bits to store all possible values), where the first possible value is 0, the next one is 1, and so forth. See [`int`](#int) for more information on integers.
+`enum` types represent one of a set of discrete values. In transfer, these values MUST be represented as an unsigned big endian integer with a size in bytes equal to `2^(max(3, ceil(log2(log2(n)))))` where `n` is the number of possible values (in other words, the least power of two greater than 8 with enough bits to store all possible values), where the first possible value is 0, the next one is 1, and so forth. See [`int`](#int) for more information on integers.
 
 This supertype differs from other supertypes because, instead of properties, it MUST have any strictly positive number of arguments. Each argument represents a separate variant of the enum.
+
 
 #### Interface
 
 Implementations SHOULD make values of this type available as an enumerated type. Failing that, they MUST make values of this type available as strings.
+
+If an `enum` type has exactly two variants, one named `true` and one named `false`, implementations MUST make values of this type available as a boolean instead.
 
 #### Example
 
@@ -233,8 +238,38 @@ types {
 
     person struct {
         name string
-        age u64
+        age u64 encoding=utf-8
         position position
     }
 }
 ```
+
+### Type variants
+
+Type variants are predefined in Telepherik. The following variants MUST be supported by implementations:
+
+- `optional<T>` for optional values of type `T`
+- `list<T, U>` for lists of values of type `T`. If `U` is a number, the list's length is fixed to `U`. If `U` is a type of supertype `int`, the list's length is encoded with that type.
+
+#### `optional<T>`
+
+`optional<T>` represents an optional value of type `T`. In transfer, values of this type MUST be one of the following:
+
+- A null byte (0x00)
+- A 1 byte (0x01) followed by the data to transfer
+
+Implementations SHOULD make this data available as a union type or a nullable type, if possible.
+
+#### `list<T, U>`
+
+`list<T, U>` represents a list of values of type `T`.
+
+If `U` is a number, the list's length is fixed to `U`. The list MUST be transferred as `U` consecutive instances of `T`.
+
+If `U` is a type of supertype `int`, the list's length is variable and encoded with type `U`. The list MUST be prefixed with its length written as `U`.
+
+If `U` is neither, implementations MUST report an error to the user.
+
+## Messages
+
+A Telepherik document MUST define messages in a top-level node named `messages`. That node MUST have exactly two child nodes, the first one represents serverbound messages that are sent by the client, the second one represents clientbound messages that are sent by the server. Both of those child nodes contain any number of nodes represening messages. Each of these message nodes MUST have a name and a child node defining their fields.
