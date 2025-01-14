@@ -48,7 +48,7 @@ transport ws
 
 ## Types
 
-A Telepherik document MUST define types in a top-level node named `types`. Each child node of this node represents an individual type. The name of each node represents the name of the type. Type names SHALL NOT include any of the following reserved characters: `<>,?!@&:.|`. The first argument, known as the supertype, is one of the following:
+A Telepherik document MUST define types in a top-level node named `types`. Each child node of this node represents an individual type. The name of each node represents the name of the type. Type names SHALL NOT include any of the following reserved characters: `<>,?!@&:.|`. The first value, known as the supertype, is one of the following:
 
 - `int`, meaning this type represents an integer number.
 - `real`, meaning this type represents a real number.
@@ -69,9 +69,9 @@ Implementations SHOULD support all supertypes and all combinations of properties
 
 ### Default properties
 
-In order to reduce repetition, default properties MAY be specified with top level nodes named `default_prop` in the top level of the document. Each node named `default_prop` MUST have 3 arguments.
+In order to reduce repetition, default properties MAY be specified with top level nodes named `default_prop` in the top level of the document. Each node named `default_prop` MUST have 3 values.
 
-The first argument MUST be one of the supertypes described in [Types](#types). The second argument MUST be the name of one of the properties described in the relevant sub-section of [Types](#types). The third argument MUST be a valid value for the relevant property. If a default value for a property is defined this way, specifying it in type definitions is OPTIONAL, if the property is not explicitly defined it is implicitly assumed to take the default value.
+The first value MUST be one of the supertypes described in [Types](#types). The second value MUST be the name of one of the properties described in the relevant sub-section of [Types](#types). The third value MUST be a valid value for the relevant property. If a default value for a property is defined this way, specifying it in type definitions is OPTIONAL, if the property is not explicitly defined it is implicitly assumed to take the default value.
 
 For example, the following two definitions are equivalent:
 
@@ -141,8 +141,7 @@ types {
 
 `enum` types represent one of a set of discrete values. In transfer, these values MUST be represented as an unsigned big endian integer with a size in bytes equal to `2^(max(3, ceil(log2(log2(n)))))` where `n` is the number of possible values (in other words, the least power of two greater than 8 with enough bits to store all possible values), where the first possible value is 0, the next one is 1, and so forth. See [`int`](#int) for more information on integers.
 
-This supertype differs from other supertypes because, instead of properties, it MUST have any strictly positive number of arguments. Each argument represents a separate variant of the enum.
-
+This supertype differs from other supertypes because, instead of properties, it MUST have any strictly positive number of values. Each value represents a separate variant of the enum.
 
 #### Interface
 
@@ -211,9 +210,9 @@ types {
 
 `struct` types represents structured data which itself includes different types.
 
-This supertype is different from other supertypes because, instead of properties, it MUST have one child node as an argument. That child node represents the structure of the data.
+This supertype is different from other supertypes because, instead of properties, it MUST have at least one child node. The child nodes represent the fields of the structure.
 
-Each node in the child node MUST have a name and exactly one argument, that argument MUST be the name of a type. In transfer, each child MUST be transferred in the order that it is defined.
+Each child node MUST have a name and exactly one value, that value MUST be the name of a type. In transfer, each child MUST be transferred in the order that it is defined.
 
 `struct` types MUST NOT be recursive, they MUST NOT reference themselves or reference another `struct` type which references them.
 
@@ -272,4 +271,42 @@ If `U` is neither, implementations MUST report an error to the user.
 
 ## Messages
 
-A Telepherik document MUST define messages in a top-level node named `messages`. That node MUST have exactly two child nodes, the first one represents serverbound messages that are sent by the client, the second one represents clientbound messages that are sent by the server. Both of those child nodes contain any number of nodes represening messages. Each of these message nodes MUST have a name and a child node defining their fields.
+A Telepherik document MAY define messages in two top-level nodes named `serverbound_messages` and `clientbound_messages`, the first one represents serverbound messages that are sent by the client, the second one represents clientbound messages that are sent by the server. Both of those nodes contain any number of child nodes represening messages. Each of these message nodes MUST have a name and child nodes representing their fields.
+
+Semantically, a message represents data to be sent without waiting for a response.
+
+Each field is represented by a node with a name and exactly one value which represents its type. A message may have any number of fields.
+
+Examples:
+
+```kdl
+serverbound_messages {
+    move { // 0x0
+        x float
+        y float
+        z float
+    }
+    rotate { // 0x1
+        pitch float
+        yaw float
+    }
+    shoot // 0x2
+}
+
+clientbound_messages {
+    player_move { // 0x0
+        id player_id
+        x float
+        y float
+        z float
+    }
+    npc_move { // 0x1
+        id npc_id
+        x float
+        y float
+        z float
+    }
+}
+```
+
+The fields of a message MUST be transferred in the order they are defined, the data of a message MUST be prefixed by its index (the first message defined is 0, the second is 1, and so on) written as an unsigned big-endian integer with a size in bytes equal to `2^(max(3, ceil(log2(log2(n)))))` where `n` is the number of messages defined.
