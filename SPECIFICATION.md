@@ -233,11 +233,11 @@ types {
         z double
     }
 
-    string string size=u64
+    string string size=u64 encoding=utf-8
 
     person struct {
         name string
-        age u64 encoding=utf-8
+        age u64
         position position
     }
 }
