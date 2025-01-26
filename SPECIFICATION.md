@@ -201,8 +201,8 @@ Implementations MAY make this data available in any way that is fit for the spec
 types {
     i64 int size=64 endianness=big signed=#false
 
-    signature size=2048 // Fixed length
-    image_png size=i64 // Variable length
+    signature binary size=2048 // Fixed length
+    image_png binary size=i64 // Variable length
 }
 ```
 
