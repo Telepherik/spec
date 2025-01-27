@@ -147,14 +147,14 @@ This supertype differs from other supertypes because, instead of properties, it 
 
 Implementations SHOULD make values of this type available as an enumerated type. Failing that, they MUST make values of this type available as strings.
 
-If an `enum` type has exactly two variants, one named `true` and one named `false`, implementations MUST make values of this type available as a boolean instead.
+If an `enum` type has exactly two variants, one named `"true"` and one named `"false"`, implementations MUST make values of this type available as a boolean instead.
 
 #### Example
 
 ```kdl
 // Both types below would be transferred as an unsigned 8-bit integer
 types {
-    bool enum false true
+    bool enum "false" "true"
     color enum red green blue yellow cyan magenta white
 }
 ```
@@ -248,7 +248,7 @@ types {
 Type variants are predefined in Telepherik. The following variants MUST be supported by implementations:
 
 - `optional<T>` for optional values of type `T`
-- `list<T, U>` for lists of values of type `T`. If `U` is a number, the list's length is fixed to `U`. If `U` is a type of supertype `int`, the list's length is encoded with that type.
+- `list<T,U>` for lists of values of type `T`. If `U` is a number, the list's length is fixed to `U`. If `U` is a type of supertype `int`, the list's length is encoded with that type.
 
 #### `optional<T>`
 
@@ -259,15 +259,17 @@ Type variants are predefined in Telepherik. The following variants MUST be suppo
 
 Implementations SHOULD make this data available as a union type or a nullable type, if possible.
 
-#### `list<T, U>`
+#### `list<T,U>`
 
-`list<T, U>` represents a list of values of type `T`.
+`list<T,U>` represents a list of values of type `T`.
 
 If `U` is a number, the list's length is fixed to `U`. The list MUST be transferred as `U` consecutive instances of `T`.
 
 If `U` is a type of supertype `int`, the list's length is variable and encoded with type `U`. The list MUST be prefixed with its length written as `U`.
 
 If `U` is neither, implementations MUST report an error to the user.
+
+**Note:** Remember that `<>` does not constitute special syntax in KDL. `list<T,U>` is a single identifier.
 
 ## Messages
 
